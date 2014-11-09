@@ -1,0 +1,2 @@
+To recover your account, please go to https://mypa/confirmrecover/{{ rargs.user }}/{{ rargs.key }}
+If you did not request this recovery, or you wish to cancel this request, please go to https://mypa/cancelrecover/{{ rargs.user }}/{{ rargs.key }}"

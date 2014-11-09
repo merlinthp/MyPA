@@ -1,0 +1,1 @@
+To continue your registration please go to https://mypa/confirmregister/{{ rargs.user }}/{{ rargs.key }}

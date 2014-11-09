@@ -1,0 +1,1 @@
+Your user account {{ rargs.user }} has been created.
