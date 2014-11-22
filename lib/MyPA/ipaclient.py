@@ -36,11 +36,19 @@ class IPAChPassError(Exception):
     pass
 
 
+class IPAPassPolicyLength(Exception):
+    pass
+
+
+class IPAPassPolicyComplexity(Exception):
+    pass
+
+
 class IPAPassPolicyError(Exception):
     pass
 
 
-class ipaclient:
+class ipaclient(object):
     """
     A class for calling various IPA methods, primarily using the JSON-RPC API
     """
@@ -50,6 +58,7 @@ class ipaclient:
     _session_id = None
     _session_ts = 0
     _session_timeout = 0
+    _defpwpolicy = "global_policy"
 
     def __init__(self, server, user, password, timeout=600):
         self._server = server
@@ -184,6 +193,78 @@ class ipaclient:
         else:
             raise IPAJSONError("JSON API returned code %d" % response.status)
 
+    def validate_password(self, password, policy=None):
+        """
+        Validate a password against IPA's password policy.
+        """
+
+        if not policy:
+            policy = self._defpwpolicy
+
+        try:
+            params = [[policy], {
+            }]
+            body = self._call_json_rpc("pwpolicy_show", params)
+        except IPAJSONError as e:
+            print "JSON call failed"
+
+            if not body or "result" not in body:
+                return False
+
+        minlen = int(body['result']['krbpwdminlength'][0])
+        minchars = int(body['result']['krbpwdmindiffchars'][0])
+
+        if len(password) < minlen:
+            raise IPAPassPolicyLength()
+
+        if minchars == 0:
+            return True
+
+        # This code reimplements the IPA password policy strength check.  As
+        # far as I can find, the policy check is only done in C code.  See
+        # ipapwd_check_policy in freeipa/util/ipa_pwd.c.  This is the
+        # if (policy->min_complexity) { ... } bit.
+
+        num_di = 0
+        num_up = 0
+        num_lo = 0
+        num_sp = 0
+        num_8b = 0
+        num_re = 0
+
+        pwchars = list(password)
+        lastch = None
+
+        for pwchar in pwchars:
+            if pwchar.isdigit():
+                num_di += 1
+            elif pwchar.isupper():
+                num_up += 1
+            elif pwchar.islower():
+                num_lo += 1
+            elif ord(pwchar) >= 128:
+                num_8b += 1
+            else:
+                num_sp += 1
+
+            if pwchar == lastch:
+                num_re += 1
+
+            lastch = pwchar
+
+        categories = 0
+        for num in [num_di, num_up, num_lo, num_sp, num_8b]:
+            if num > 0:
+                categories += 1
+
+        if num_re > 1:
+            categories -= 1
+
+        if categories < minchars:
+            raise IPAPassPolicyComplexity()
+
+        return True
+
     def user_info(self, username):
         """
         Fetch the info for an IPA user.  Returns the raw result data.
@@ -213,9 +294,9 @@ class ipaclient:
     def user_create(self, username, email, gn, sn, password):
         """
         Creates a new user in IPA with a minimum set of required attributes.
-
-        FIXME: Need to validate the password before we create the user.
         """
+
+        self.validate_password(password)
 
         temppass = gen_randpass()
         body = None
@@ -272,14 +353,9 @@ class ipaclient:
     def user_pass_reset(self, username, password):
         """
         Reset a user's password to a specific value, using IPA admin rights.
-
-        FIXME: There's a big issue with this: If the new password fails the
-        IPA password quality checks, we're stuck in a situation where the
-        password has been set to a random value.  Ideally we should ask IPA
-        if the new password meets the quality checks _before_ doing the
-        admin reset.  I don't think IPA has a way of validating a new
-        password without trying to reset it.  Needs some thought.
         """
+
+        self.validate_password(password)
 
         temppass = gen_randpass()
         body = None
