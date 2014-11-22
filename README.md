@@ -11,6 +11,21 @@ Requirements
 
 MyPA is tested against FreeIPA 3.3 and Python 2.7.
 
+The web UI requires:
+
+- python-flask
+- python-flask-kvsession
+- python-flask-login
+- python-flask-wtforms
+- python-simplekv
+- a session store supported by simplekv (currently hard-coded to use redis)
+
+The API requires:
+
+- python-ladon
+- python-jinja2
+- mod_wsgi
+
 Architecture
 ============
 
