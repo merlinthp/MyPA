@@ -78,13 +78,15 @@ Resetting user passwords
 
 There are two ways to change a password in IPA.  Either the user can change their own password (in which case they need to provide their current password for authentication), or an admin user can reset the users password instead (without needing the current password).
 
-The issue with the latter is that IPA enforces a (sensible) policy whereby if the password of an account is set by any user other than the account owner, the password is immediately set to expired.  This forces the user to reset their password on next login.  This is a pretty sensible, as means that long-term, an admin doesn't know another users password.
+The issue with the latter is that IPA enforces a (sensible) policy whereby if the password of an account is set by any user other than the account owner, the password is immediately set to expired.  This forces the user to reset their password on next login.  This is pretty sensible, as means that long-term, an admin doesn't know another users password.
 
 That causes MyPA problems, however.  MyPA needs to create new user accounts with a provided password, and reset existing user passwords to a provided value, using an admin user account.  To do this, MyPA uses both the above methods in turn.
 
 When creating a new user, or resetting a password, MyPA sets the user password to a temporary (random) value using the the JSON-RPC API, then changes the password to the final value, using the IPA web UI change password POST method.
 
-The one wrinkle with this two-step approach is password quality validation.  IPA's password policy includes password quality (or strength) settings around minimum length, complexity, etc.  When an admin changes a user password, this validation is not done.  When a user changes their own password it is.  This means that it is possible for the second stage of the password reset to fail, and leave the user account in limbo.  Ideally we need to pre-validate the new user password against the IPA password policy.  Not sure how to do that without reimplmenting the validation logic, though...
+The one wrinkle with this two-step approach is password quality validation.  IPA's password policy includes password quality (or strength) settings around minimum length, complexity, etc.  When an admin changes a user password, this validation is not done.  When a user changes their own password it is.  This means that it is possible for the second stage of the password reset to fail, and leave the user account in limbo.
+
+IPA itself checks passwords against IPA policy in a C function called ipapwd_check_policy, in the source file freeipa/util/ipa_pwd.c.  This code is used by the ipa-pwd-extop 389-DS plugin, and is called when IPA tries to set the user password in LDAP (the same plugin is also responsible for things like updating the kerberos secret at the same time).  I've not found anywhere this code can be called from python, so MyPA reimplents it.  IPA can have multiple password policies configured, but only one can apply to each user.  MyPA currently doesn't know how to look up the policy for a specific user, so it looks at the global policy by default, or a specific named policy. 
 
 Process Flows
 =============
