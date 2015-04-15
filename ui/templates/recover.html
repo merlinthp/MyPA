@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block head %}
+<title>Recover an account</title>
+{% endblock %}
+{% block content %}
+<h2>Recover an account</h2>
+<form method="POST" action="{{ url_for('recover') }}">
+	{{ form.hidden_tag() }}
+	<div>{{ form.username.label }}: {{ form.username() }}</div>
+	<div><input type="submit" value="Recover"></div>
+</form>
+{% endblock %}

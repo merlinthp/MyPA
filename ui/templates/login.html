@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block head %}
+<title>MyPA Login</title>
+{% endblock %}
+{% block content %}
+<h2>Log in</h2>
+<form method="POST" action="{{ url_for('login') }}">
+	{{ form.hidden_tag() }}
+	<div>{{ form.username.label }}: {{ form.username() }}</div>
+	<div>{{ form.password.label }}: {{ form.password() }}</div>
+	<div><input type="submit" value="Log in"></div>
+</form>
+{% endblock %}

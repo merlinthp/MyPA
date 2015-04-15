@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block head %}
+<title>MyPA</title>
+{% endblock %}
+{% block content %}
+<h2>MyPA</h2>
+<ul>
+	<li><a href="{{ url_for('login') }}">Log in</a></li>
+	<li><a href="{{ url_for('register') }}">Register an new account</a></li>
+	<li><a href="{{ url_for('recover') }}">Recover an existing account</a></li>
+</ul>
+{% endblock %}

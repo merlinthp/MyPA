@@ -1,5 +1,5 @@
 NAME=MyPA
-SUBDIRS = api lib
+SUBDIRS = api lib ui
 
 _default:
 	@echo "read the makefile"
